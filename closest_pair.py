@@ -6,7 +6,8 @@ pygame.init()
 pygame.font.init()
 
 class Closest_Pair():
-    points = []
+    points = []     # lista de pontos
+    lines = []      # lista de linhas divisórias ativas
     colors = {}
     def __init__(self):
         size = width, height = 800, 600
@@ -21,6 +22,7 @@ class Closest_Pair():
         self.screen = pygame.display.set_mode(size)
         pygame.display.set_caption('Closest Pair')
         self.screen.fill(self.colors['white'])
+
 
     def draw_point(self, point):
         pygame.draw.circle(self.screen, self.colors['black'], point, 5)
@@ -45,6 +47,10 @@ class Closest_Pair():
         self.points.append(point)
 
 
+    def insert_divider(self, x):
+        self.lines.append(((x, 0), (x,600)))
+
+
     def render(self):
         pygame.display.flip()
 
@@ -65,15 +71,21 @@ class Closest_Pair():
         self.render()
 
 
-    def algorithm_bruteforce(self):
+    def draw_dividers(self):
+        for line in self.lines:
+            self.draw_line(line[0], line[1], self.colors['blue'])
+            self.render()
+
+
+    def algorithm_bruteforce(self, points):
         if (self.nro_points() < 2):
             self.plot_warning('Você precisa ter ao menos 2 pontos', (200, 400))
             time.sleep(1)
             self.reset_screen()
         else:
             min_dist = ((0,0), (0,0), sys.float_info.max)
-            for pA in self.points:
-                for pB in self.points:
+            for pA in points:
+                for pB in points:
                     if (pA == pB):
                         continue
                     else:
@@ -84,11 +96,52 @@ class Closest_Pair():
                             min_dist = (pA, pB, dist)
                     self.reset_screen()
                     self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+            return min_dist
+
+
+    def closest_pair_brute(self, points):
+        if (len(points) < 2):
+            return ((0,0), (0,0), sys.float_info.max)
+        min_dist = ((0,0), (0,0), sys.float_info.max)
+        for pA in points:
+            for pB in points:
+                if (pA == pB):
+                    continue
+                else:
+                    self.draw_line(pA, pB, self.colors['black'])
+                    time.sleep(0.2)
+                    dist = self.get_distance(pA, pB)
+                    if (dist < min_dist[2]):
+                        min_dist = (pA, pB, dist)
+                self.reset_screen()
+                self.draw_dividers()
+                self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+        return min_dist
+
+
+    def closest_pair_divide(self, points):
+        print(points)
+        if (len(points) < 4):
+            self.closest_pair_brute(points)
+        else:
+            half = len(points) // 2
+            self.insert_divider(points[half][0])
+            self.draw_dividers()
+            print(half)
+            min_left = self.closest_pair_divide(points[:half])
+            min_right = self.closest_pair_divide(points[half:])
+            self.lines.pop()
 
 
     def algorithm_divide_and_conquer(self):
-        sorted_by_x = sorted(self.points, key=lambda tup: tup[0])
-        print(sorted_by_x)
+        if (self.nro_points() < 2):
+            self.plot_warning('Você precisa ter ao menos 2 pontos', (200, 400))
+            time.sleep(1)
+            self.reset_screen()
+        else:
+            sorted_by_x = sorted(self.points, key=lambda tup: tup[0])
+            self.closest_pair_divide(sorted_by_x)
+
 
 
 
@@ -114,7 +167,7 @@ def main():
                 elif event.key == pygame.K_r:
                     cp.reset_screen()
                 elif event.key == pygame.K_b:
-                    cp.algorithm_bruteforce()
+                    cp.algorithm_bruteforce(cp.points)
                 elif event.key == pygame.K_d:
                     cp.dump_points()
                 elif event.key == pygame.K_s:
