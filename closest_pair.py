@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sys, pygame
+import sys, pygame, time
 
 pygame.init()
+pygame.font.init()
 
 class Closest_Pair():
     points = []
@@ -35,8 +36,9 @@ class Closest_Pair():
         self.draw_points()
 
 
-    def draw_line(self,pointA, pointB):
-        pygame.draw.line(self.screen, self.colors['green'], pointA, pointB)
+    def draw_line(self,pointA, pointB, color):
+        pygame.draw.line(self.screen, color, pointA, pointB)
+        self.render()
 
 
     def insert_point(self, point):
@@ -49,6 +51,49 @@ class Closest_Pair():
 
     def nro_points(self):
         return len(self.points)
+
+
+    def get_distance(self, pA, pB):
+        dist = ((pB[0] - pA[0])**2 + (pB[1] - pA[1])**2)**(1/2)
+        return dist
+
+
+    def plot_warning(self, text, position):
+        font = pygame.font.SysFont('Times New Roman', 30)
+        text = font.render(text, True, self.colors['red'])
+        self.screen.blit(text, position)
+        self.render()
+
+
+    def algorithm_bruteforce(self):
+        if (self.nro_points() < 2):
+            self.plot_warning('Você precisa ter ao menos 2 pontos', (200, 400))
+            time.sleep(1)
+            self.reset_screen()
+        else:
+            min_dist = ((0,0), (0,0), sys.float_info.max)
+            for pA in self.points:
+                for pB in self.points:
+                    if (pA == pB):
+                        continue
+                    else:
+                        self.draw_line(pA, pB, self.colors['black'])
+                        time.sleep(0.2)
+                        dist = self.get_distance(pA, pB)
+                        if (dist < min_dist[2]):
+                            min_dist = (pA, pB, dist)
+                    self.reset_screen()
+                    self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+
+
+    def algorithm_divide_and_conquer(self):
+        sorted_by_x = sorted(self.points, key=lambda tup: tup[0])
+        print(sorted_by_x)
+
+
+
+    def dump_points(self):
+        print(self.points)
 
 
 def main():
@@ -68,6 +113,12 @@ def main():
                         cp.draw_line(cp.points[-1], cp.points[-2])
                 elif event.key == pygame.K_r:
                     cp.reset_screen()
+                elif event.key == pygame.K_b:
+                    cp.algorithm_bruteforce()
+                elif event.key == pygame.K_d:
+                    cp.dump_points()
+                elif event.key == pygame.K_s:
+                    cp.algorithm_divide_and_conquer()
             cp.render()
 
 if __name__ == '__main__':
