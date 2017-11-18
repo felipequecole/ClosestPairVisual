@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import sys, pygame, time
+import sys, pygame, time, os
 
 pygame.init()
+try:
+    icon = pygame.image.load(os.path.join('assets', 'icon.png'))
+    pygame.display.set_icon(icon)
+except Exception as e:
+    pass
+
 pygame.font.init()
 
 class Closest_Pair():
@@ -24,6 +30,11 @@ class Closest_Pair():
         self.screen.fill(self.colors['white'])
 
 
+    def draw_border(self):
+        # caso tenha um background, é aqui que a gente setaria ele, como não tem..
+        self.screen.fill(self.colors['white'])
+
+
     def draw_point(self, point):
         pygame.draw.circle(self.screen, self.colors['black'], point, 5)
 
@@ -34,7 +45,7 @@ class Closest_Pair():
 
 
     def reset_screen(self):
-        self.screen.fill(self.colors['white'])
+        self.draw_border()
         self.draw_points()
 
 
@@ -163,7 +174,7 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     if (cp.nro_points() > 1):
-                        cp.draw_line(cp.points[-1], cp.points[-2])
+                        cp.draw_line(cp.points[-1], cp.points[-2], cp.colors['blue'])
                 elif event.key == pygame.K_r:
                     cp.reset_screen()
                 elif event.key == pygame.K_b:
