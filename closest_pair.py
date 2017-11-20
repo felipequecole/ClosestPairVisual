@@ -35,11 +35,11 @@ class Closest_Pair():
         self.screen.fill(self.colors['white'])
 
 
-    def draw_point(self, point):
-        pygame.draw.circle(self.screen, self.colors['black'], point, 5)
+    def draw_point(self, point, color=(0,0,0)):
+        pygame.draw.circle(self.screen, color, point, 5)
 
 
-    def draw_points(self):
+    def draw_points(self, points=points):
         for point in self.points:
             self.draw_point(point)
 
@@ -66,6 +66,12 @@ class Closest_Pair():
         pygame.display.flip()
 
 
+    def clean_board(self):
+        del self.points[:]
+        self.reset_screen()
+        self.render()
+
+
     def nro_points(self):
         return len(self.points)
 
@@ -85,26 +91,44 @@ class Closest_Pair():
     def draw_dividers(self):
         for line in self.lines:
             self.draw_line(line[0], line[1], self.colors['blue'])
-            self.render()
+        self.render()
 
 
-    def algorithm_bruteforce(self, points):
+    def draw_tunnel(self, x, dist):
+        self.reset_screen()
+        self.draw_line((x-dist, 0), (x-dist, 600), self.colors['blue'])
+        self.draw_line((x+dist, 0), (x+dist, 600), self.colors['blue'])
+        self.render()
+
+
+    def blink_line(self, pA, pB, color, times=3, dividers=True):
+        for p in range(times):
+                self.reset_screen()
+                if (dividers):
+                    self.draw_dividers()
+                self.render()
+                time.sleep(0.2)
+                self.draw_line(pA, pB, color)
+                self.render()
+                time.sleep(0.2)
+
+    def algorithm_bruteforce(self, points=points):
         if (self.nro_points() < 2):
             self.plot_warning('Você precisa ter ao menos 2 pontos', (200, 400))
             time.sleep(1)
             self.reset_screen()
         else:
+            self.reset_screen()
             min_dist = ((0,0), (0,0), sys.float_info.max)
-            for pA in points:
-                for pB in points:
-                    if (pA == pB):
-                        continue
-                    else:
-                        self.draw_line(pA, pB, self.colors['black'])
-                        time.sleep(0.2)
-                        dist = self.get_distance(pA, pB)
-                        if (dist < min_dist[2]):
-                            min_dist = (pA, pB, dist)
+            for i in range(len(points)-1):
+                for j in range(i+1,len(points)):
+                    pA = points[i]
+                    pB = points[j]
+                    self.draw_line(pA, pB, self.colors['black'])
+                    time.sleep(0.2)
+                    dist = self.get_distance(pA, pB)
+                    if (dist < min_dist[2]):
+                        min_dist = (pA, pB, dist)
                     self.reset_screen()
                     self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
             return min_dist
@@ -114,34 +138,79 @@ class Closest_Pair():
         if (len(points) < 2):
             return ((0,0), (0,0), sys.float_info.max)
         min_dist = ((0,0), (0,0), sys.float_info.max)
-        for pA in points:
-            for pB in points:
-                if (pA == pB):
-                    continue
-                else:
-                    self.draw_line(pA, pB, self.colors['black'])
-                    time.sleep(0.2)
-                    dist = self.get_distance(pA, pB)
-                    if (dist < min_dist[2]):
-                        min_dist = (pA, pB, dist)
-                self.reset_screen()
-                self.draw_dividers()
-                self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+        for i in range(len(points)-1):
+            for j in range(i+1,len(points)):
+                pA = points[i]
+                pB = points[j]
+                self.draw_line(pA, pB, self.colors['black'])
+                time.sleep(0.5)
+                dist = self.get_distance(pA, pB)
+                if (dist < min_dist[2]):
+                    min_dist = (pA, pB, dist)
+            self.reset_screen()
+            self.draw_dividers()
+            self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
         return min_dist
 
 
     def closest_pair_divide(self, points):
-        print(points)
+        # print(points)
         if (len(points) < 4):
-            self.closest_pair_brute(points)
+            return self.closest_pair_brute(points)
         else:
             half = len(points) // 2
-            self.insert_divider(points[half][0])
+            cut = points[half]
+            self.insert_divider(cut[0])
             self.draw_dividers()
-            print(half)
+            self.render()
+            # print(half)
             min_left = self.closest_pair_divide(points[:half])
             min_right = self.closest_pair_divide(points[half:])
-            self.lines.pop()
+            self.reset_screen()
+            self.draw_dividers()
+            self.draw_line(min_left[0], min_left[1], color=self.colors['red'])
+            self.draw_line(min_right[0], min_right[1], color=self.colors['red'])
+            self.render()
+            time.sleep(0.3)
+            self.reset_screen()
+            self.draw_dividers()
+            if(min_right[2] > min_left[2]):
+                self.blink_line(pA = min_left[0], pB = min_left[1], color=self.colors['red'], times=3)
+                self.lines.pop()
+                min_div =  min_left
+            else:
+                self.blink_line(pA = min_right[0], pB = min_right[1], color=self.colors['red'], times=3)
+                self.lines.pop()
+                min_div =  min_right
+            tunnel = list(filter(lambda p: abs(cut[0] - p[:][0]) < min_div[2], points))
+            min_dist = min_div
+            if (len(tunnel) > 0):
+                self.reset_screen()
+                self.draw_tunnel(cut[0], min_div[2])
+                self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+                for i in range(len(tunnel)-1):
+                    for j in range(i, len(tunnel)):
+                        if (abs(tunnel[i][1] - tunnel[j][1]) > min_div[2] or tunnel[i] == tunnel[j]):
+                            continue
+                        else:
+                            dist = self.get_distance(tunnel[i], tunnel[j])
+                            self.draw_line(tunnel[i], tunnel[j], self.colors['black'])
+                            # self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+                            # self.render()
+                            if (dist < min_dist[2]):
+                                min_dist = (tunnel[i], tunnel[j], dist)
+                            self.reset_screen()
+                            self.draw_tunnel(cut[0], min_div[2])
+                            self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+                            time.sleep(0.2)
+
+            # print(tunnel)
+            # self.reset_screen()
+            return min_dist
+
+
+    def sort_by_coordinate(self, list, coord = 0):
+        return sorted(list, key=lambda tup: tup[coord])
 
 
     def algorithm_divide_and_conquer(self):
@@ -149,9 +218,17 @@ class Closest_Pair():
             self.plot_warning('Você precisa ter ao menos 2 pontos', (200, 400))
             time.sleep(1)
             self.reset_screen()
+            return ((0,0), (0,0), sys.float_info.max)
         else:
-            sorted_by_x = sorted(self.points, key=lambda tup: tup[0])
-            self.closest_pair_divide(sorted_by_x)
+            sorted_by_x = self.sort_by_coordinate(self.points, 0)
+            closest_pair = self.closest_pair_divide(sorted_by_x)
+            print(closest_pair)
+            self.reset_screen()
+            self.draw_line(closest_pair[0], closest_pair[1], self.colors['red'])
+            self.draw_point(closest_pair[0], color=self.colors['red'])
+            self.draw_point(closest_pair[1], color=self.colors['red'])
+            self.render()
+            return closest_pair
 
 
 
@@ -178,12 +255,17 @@ def main():
                 elif event.key == pygame.K_r:
                     cp.reset_screen()
                 elif event.key == pygame.K_b:
-                    cp.algorithm_bruteforce(cp.points)
+                    cp.algorithm_bruteforce()
                 elif event.key == pygame.K_d:
                     cp.dump_points()
                 elif event.key == pygame.K_s:
-                    cp.algorithm_divide_and_conquer()
-            cp.render()
+                    closest_pair = cp.algorithm_divide_and_conquer()
+                    cp.draw_point(closest_pair[0], cp.colors['red'])
+                    cp.draw_point(closest_pair[1], cp.colors['red'])
+                    # cp.render()
+                elif event.key == pygame.K_e:
+                    cp.clean_board()
+        cp.render()
 
 if __name__ == '__main__':
     main()
