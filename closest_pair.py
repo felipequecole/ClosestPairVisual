@@ -15,6 +15,8 @@ class Closest_Pair():
     points = []     # lista de pontos
     lines = []      # lista de linhas divisórias ativas
     colors = {}
+    screens = {}
+    button_pos = {}
     def __init__(self):
         size = width, height = 800, 600
         self.colors = {
@@ -24,15 +26,30 @@ class Closest_Pair():
             'green': (0, 255, 0),
             'blue': (0, 0, 255)
         }
+        self.screens['default'] = pygame.image.load(os.path.join('assets', 'telas', 'default.png'))
+        self.screens['brute_hover'] = pygame.image.load(os.path.join('assets', 'telas', 'hoverforca.png'))
+        self.screens['div_hover'] = pygame.image.load(os.path.join('assets', 'telas', 'hoverdivisao.png'))
+        self.screens['reset_hover'] = pygame.image.load(os.path.join('assets', 'telas', 'hoverlimpar.png'))
+        self.screens['brute_run'] = pygame.image.load(os.path.join('assets', 'telas', 'rodandoforca.png'))
+        self.screens['div_run'] = pygame.image.load(os.path.join('assets', 'telas', 'rodandodivisao.png'))
+        self.button_pos['brute'] = [(60, 515), (120, 570)]
+        self.button_pos['div'] = [(360, 500), (450, 585)]
+        self.button_pos['reset'] = [(660, 535), (735, 560)]
+        self.fundo = 'default'
+
+        self.closest_pair = None
 
         self.screen = pygame.display.set_mode(size)
         pygame.display.set_caption('Closest Pair')
+        # self.
         self.screen.fill(self.colors['white'])
 
 
     def draw_border(self):
         # caso tenha um background, é aqui que a gente setaria ele, como não tem..
         self.screen.fill(self.colors['white'])
+        self.screen.blit(self.screens[self.fundo], (0,0))
+        self.render()
 
 
     def draw_point(self, point, color=(0,0,0)):
@@ -47,6 +64,11 @@ class Closest_Pair():
     def reset_screen(self):
         self.draw_border()
         self.draw_points()
+        if (self.closest_pair is not None):
+            self.draw_line(self.closest_pair[0], self.closest_pair[1], self.colors['red'])
+            self.draw_point(self.closest_pair[0], self.colors['red'])
+            self.draw_point(self.closest_pair[1], self.colors['red'])
+        self.render()
 
 
     def draw_line(self,pointA, pointB, color):
@@ -66,8 +88,16 @@ class Closest_Pair():
         pygame.display.flip()
 
 
+    def check_collision(self, mouse, button):
+        if (mouse[0] > button[0][0] and mouse[0] < button[1][0] and mouse[1] > button[0][1] and mouse[1] < button[1][1]):
+            return True
+        else:
+            return False
+
+
     def clean_board(self):
         del self.points[:]
+        self.closest_pair = None
         self.reset_screen()
         self.render()
 
@@ -131,6 +161,7 @@ class Closest_Pair():
                         min_dist = (pA, pB, dist)
                     self.reset_screen()
                     self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+            self.closest_pair = min_dist
             return min_dist
 
 
@@ -188,6 +219,8 @@ class Closest_Pair():
                 self.reset_screen()
                 self.draw_tunnel(cut[0], min_div[2])
                 self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
+                self.render()
+                time.sleep(0.2)
                 for i in range(len(tunnel)-1):
                     for j in range(i, len(tunnel)):
                         if (abs(tunnel[i][1] - tunnel[j][1]) > min_div[2] or tunnel[i] == tunnel[j]):
@@ -196,7 +229,8 @@ class Closest_Pair():
                             dist = self.get_distance(tunnel[i], tunnel[j])
                             self.draw_line(tunnel[i], tunnel[j], self.colors['black'])
                             # self.draw_line(min_dist[0], min_dist[1], self.colors['red'])
-                            # self.render()
+                            self.render()
+                            time.sleep(0.2)
                             if (dist < min_dist[2]):
                                 min_dist = (tunnel[i], tunnel[j], dist)
                             self.reset_screen()
@@ -222,12 +256,13 @@ class Closest_Pair():
         else:
             sorted_by_x = self.sort_by_coordinate(self.points, 0)
             closest_pair = self.closest_pair_divide(sorted_by_x)
-            print(closest_pair)
+            # print(closest_pair)
             self.reset_screen()
             self.draw_line(closest_pair[0], closest_pair[1], self.colors['red'])
             self.draw_point(closest_pair[0], color=self.colors['red'])
             self.draw_point(closest_pair[1], color=self.colors['red'])
             self.render()
+            self.closest_pair = closest_pair
             return closest_pair
 
 
@@ -239,15 +274,46 @@ class Closest_Pair():
 
 def main():
     cp = Closest_Pair()
+    cp.reset_screen()
     # game loop
     while True:
+        mouse_pos = pygame.mouse.get_pos()
+        if (cp.check_collision(mouse_pos, cp.button_pos['brute'])):
+            if (cp.fundo != 'brute_hover'):
+                cp.fundo = 'brute_hover'
+                cp.reset_screen()
+        elif (cp.check_collision(mouse_pos, cp.button_pos['div'])):
+            if (cp.fundo != 'div_hover'):
+                cp.fundo = 'div_hover'
+                cp.reset_screen()
+        elif (cp.check_collision(mouse_pos, cp.button_pos['reset'])):
+            if (cp.fundo != 'reset_hover'):
+                cp.fundo = 'reset_hover'
+                cp.reset_screen()
+        elif (cp.fundo != 'default'):
+            cp.fundo = 'default'
+            cp.reset_screen()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
-                cp.draw_point(pos)
-                cp.insert_point(pos)
+                if (pos[1] < 485):
+                    cp.draw_point(pos)
+                    cp.insert_point(pos)
+                elif (cp.check_collision(pos, cp.button_pos['brute'])):
+                    cp.closest_pair = None
+                    closest_pair = cp.algorithm_bruteforce()
+                    cp.draw_point(closest_pair[0], cp.colors['red'])
+                    cp.draw_point(closest_pair[1], cp.colors['red'])
+                elif (cp.check_collision(pos, cp.button_pos['div'])):
+                    cp.closest_pair = None
+                    closest_pair = cp.algorithm_divide_and_conquer()
+                    cp.draw_point(closest_pair[0], cp.colors['red'])
+                    cp.draw_point(closest_pair[1], cp.colors['red'])
+                elif (cp.check_collision(pos, cp.button_pos['reset'])):
+                    cp.clean_board()
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     if (cp.nro_points() > 1):
@@ -255,10 +321,14 @@ def main():
                 elif event.key == pygame.K_r:
                     cp.reset_screen()
                 elif event.key == pygame.K_b:
-                    cp.algorithm_bruteforce()
+                    cp.closest_pair = None
+                    closest_pair = cp.algorithm_bruteforce()
+                    cp.draw_point(closest_pair[0], cp.colors['red'])
+                    cp.draw_point(closest_pair[1], cp.colors['red'])
                 elif event.key == pygame.K_d:
                     cp.dump_points()
                 elif event.key == pygame.K_s:
+                    cp.closest_pair = None
                     closest_pair = cp.algorithm_divide_and_conquer()
                     cp.draw_point(closest_pair[0], cp.colors['red'])
                     cp.draw_point(closest_pair[1], cp.colors['red'])
